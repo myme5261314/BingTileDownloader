@@ -13,14 +13,13 @@ job for each tile image download stuff.
 
 # producer_consumer_queue
 from Queue import Queue
-import random
 import threading
-import time
 from os.path import exists
+
 import requests
 
 from transform import tileXYZToQuadKey
-from ctypes.test.test_errno import threading
+
 
 MAX_Threads = 201
 MAX_QUEUE = 2000
