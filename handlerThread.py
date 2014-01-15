@@ -10,87 +10,129 @@ This is the file for handlerThread which extends from Thread to handle with the
 job for each tile image download stuff.
 '''
 
+
+# producer_consumer_queue
+from Queue import Queue
+import random
 import threading
+import time
+from os.path import exists
 import requests
-from transform import *
-from requests.exceptions import ConnectionError
 
-debug = True
-z = 19
-MAX = 2**z-1
-x = 0
-y = 0
-print y
-count = 0
-threads_num = 20
-current_keys = []
+from transform import tileXYZToQuadKey
+from ctypes.test.test_errno import threading
 
-lock = threading.RLock()
+MAX_Threads = 201
+MAX_QUEUE = 2000
+z = 13
+MAX_axes = 2**z-1
 
-class handlerThread(threading.Thread):
-    def __init__(self, QuadKey):
+basic_url = 'http://h0.ortho.tiles.virtualearth.net/tiles/a%s.jpeg?g=131'
+
+none_img = open('None.png','rb').read()
+floder = 'D://bing/%s'
+
+class BingException(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class BingImageDownloader(threading.Thread):
+    def __init__(self, ix, iy):
         threading.Thread.__init__(self)
-        self.key = QuadKey
-        self.basic_url = 'http://h0.ortho.tiles.virtualearth.net/tiles/a%s.jpeg?g=131'
-        self.basic_path = 'D://bing/%s.jpg'
-    
+        self.x = ix
+        self.y = iy
+        self.key = tileXYZToQuadKey(self.x, self.y, z)
+        self.url = basic_url % self.key
+        self.file = floder % (self.key+'.jpg')
+
     def run(self):
-        img_url = self.basic_url % self.key
+        threading.Thread.run(self)
         try:
-            img = requests.get(img_url)
-        except ConnectionError as e:
+            self.download()
+#             print 'Finish: %d %d' % (self.x, self.y) 
+        except BingException as e:
             print e
-            print 'Retry %s' % self.key
-            self.stop(self.key)
+            self.retry()
+#         self.stop()
+    
+    def download(self):
+        try:
+            img = requests.get(self.url)
+            if img.content != none_img and not exists(self.file):
+                _f = open(self.file, 'wb')
+                _f.write(img.content)
+                _f.close()
+        except Exception as e:
+            raise BingException(e)
+    
+    def retry(self):
+        h = BingImageDownloader(self.x, self.y)
+        h.start()
+        
+#     def stop(self):
+#         threading.Thread.stop(self)
+        
+class KeyGenerator(threading.Thread):
+    def __init__(self, queue):
+        threading.Thread.__init__(self)
+        self.data = queue
+        self.x = 0
+        self.y = 0
+        self.count = 0
+        self.stop_produce = False
+        self.stop_consume = False
+
+    def run(self):
+        while True:
+            dl = self.data.qsize()
+            if dl <= MAX_QUEUE/2 and not self.stop_produce:
+                for _ in range(MAX_QUEUE/10):
+                    if not self.getNextXY():
+                        self.stop_produce = True
+                        break
+                    else:
+                        self.data.put((self.x, self.y))
             
-        f = open(self.basic_path % self.key, 'wb')
-        f.write(img.content)
-        f.close()
-        self.stop()
-#         print self.key
-    
-    def stop(self, next_key=None):
-        lock.acquire()
-        if next_key == None:
-            next_key = getNextQuadKey()
-        lock.release()
-        if next_key != None:
-            lock.acquire()
-            global current_keys
-            current_keys.remove(self.key)
-            current_keys.append(next_key)
-            lock.release()
-            print 'finish %s -> %s' % (self.key,next_key)
-            next_handler = handlerThread(next_key)
-            next_handler.start()
-
-
-def getNextQuadKey():
-    global count, x, y, MAX, debug
-    count = count + 1
-    if debug and count >= 201:
-        return None
-    
-    if x<MAX:
-        if y<MAX:
-            y = y + 1
+            tl = len(threading.enumerate())
+#             print tl
+            if tl < MAX_Threads and not self.stop_consume:
+                for _ in range(MAX_Threads-tl):
+                    if not self.data.empty():
+                        (_x, _y) = self.data.get()
+                        handler = BingImageDownloader(_x, _y)
+                        handler.start()
+                    else:
+                        self.stop_consume = True
+                        break
+            
+            if self.stop_produce and self.stop_consume:
+                break
+                    
+    def getNextXY(self):
+        if self.count >= 5000:
+            self.x = None
+            self.y = None
+            return False
+        self.count = self.count + 1
+        if self.y < MAX_axes:
+            if self.x < MAX_axes:
+                self.x = self.x + 1
+            else:
+                self.x = 0
+                self.y = self.y + 1
+            return True
         else:
-            y= 0
-            x= x + 1;
-        print x,y
-        return tileXYZToQuadKey(x, y, z)
-    else:
-        return None
-    
-    
-
-        
+            self.x = None
+            self.y = None
+            return False
+            
 if __name__ == '__main__':
-    for i in xrange(threads_num):
-        current_keys.append(getNextQuadKey())
-    print current_keys
-         
-    for i in xrange(threads_num):
-        th = handlerThread(current_keys[i])
-        th.start()
-        
+    q = Queue()
+    r = KeyGenerator(q)
+    r.start()               
+                
+
+            
+                    
