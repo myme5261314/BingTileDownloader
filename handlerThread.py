@@ -100,9 +100,12 @@ class KeyGenerator(threading.Thread):
         self.data = Queue()
         self.x = self.config.x
         self.y = self.config.y
+        self.min_x = self.config.min_x
+        self.max_x = self.config.max_x
+        self.min_y = self.config.min_y
+        self.max_y = self.config.max_y
         self.Max_z = self.config.max_z
         self.Min_z = self.config.min_z
-        self.MAX_axes = 2**self.Max_z
         self.debug = self.config.debug
         self.debugTryTimes = self.config.debugTryTimes
         if self.config.debug:
@@ -144,11 +147,11 @@ class KeyGenerator(threading.Thread):
                 return False
             self.count = self.count + 1
         
-        if self.y < self.MAX_axes:
-            if self.x < self.MAX_axes:
+        if self.y < self.max_y:
+            if self.x < self.max_x:
                 self.x = self.x + 1
             else:
-                self.x = 0
+                self.x = self.min_x
                 self.y = self.y + 1
             return True
         else:
