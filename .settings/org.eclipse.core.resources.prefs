@@ -1,4 +1,7 @@
 eclipse.preferences.version=1
+encoding/Config.py=utf-8
+encoding/ExamineSupplier.py=utf-8
 encoding/downloader.py=utf-8
 encoding/handlerThread.py=utf-8
+encoding/rect.py=utf-8
 encoding/transform.py=utf-8

@@ -7,7 +7,21 @@ Created on 2014年1月15日
 @contact: myme5261314@gmail.com
 This file defines some transform function that will be invoked in this project.
 '''
+import math
 
+def latToTileY(lat, zoom):
+    l = lat / 180 * math.pi;
+    pf = math.log(math.tan(l) + (1 / math.cos(l)));
+    return math.pow(2.0, zoom - 1) * (math.pi - pf) / math.pi;
+
+def lonToTileX(lon, zoom):
+    return math.pow(2.0, zoom - 3) * (lon + 180.0) / 45.0;
+
+def tileYToLat(y, zoom):
+    return math.atan(math.sinh(math.pi - (math.pi * y / math.pow(2.0, zoom - 1)))) * 180 / math.pi;
+
+def tileXToLon(x, zoom):
+    return x * 45.0 / math.pow(2.0, zoom - 3) - 180.0;
 
 
 def tileXYZToQuadKey(x, y, z):
@@ -15,8 +29,8 @@ def tileXYZToQuadKey(x, y, z):
     to its corresponding QuadKey index.
     
     Args:
-        x (int): the horizontal axes position. Range from 0-2^z.
-        y (int): the vertical axes position. Range from 0-2^z.
+        x (int): the horizontal axes position. Range from 0-2^z-1.
+        y (int): the vertical axes position. Range from 0-2^z-1.
         z (int): the zoom level. Range from 1-19 for the Bing Map Tile System.
     
     Returns:
