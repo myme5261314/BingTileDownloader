@@ -17,19 +17,19 @@ import threading
 from os.path import exists
 
 import requests
+from Config import Config
 
 from transform import tileXYZToQuadKey
 
 
-MAX_Threads = 201
-MAX_QUEUE = 2000
-z = 13
-MAX_axes = 2**z-1
+# z = 13
+# MAX_axes = 2**z-1
 
-basic_url = 'http://h0.ortho.tiles.virtualearth.net/tiles/a%s.jpeg?g=131'
+# basic_url = 'http://h0.ortho.tiles.virtualearth.net/tiles/a%s.jpeg?g=131'
+# basic_url = 'http://ecn.t0.tiles.virtualearth.net/tiles/a%s.jpeg?g=2241'
 
 none_img = open('None.png','rb').read()
-floder = 'D://bing/%s'
+# floder = 'D://bing/%s'
 
 class BingException(Exception):
     def __init__(self, value):
@@ -38,14 +38,19 @@ class BingException(Exception):
         return repr(self.value)
 
 class BingImageDownloader(threading.Thread):
-    def __init__(self, ix, iy):
+    def __init__(self, ix, iy, config, iz=0):
         threading.Thread.__init__(self)
+        self.config = config
         self.x = ix
         self.y = iy
-        self.key = tileXYZToQuadKey(self.x, self.y, z)
-        self.url = basic_url % self.key
-        self.file = floder % (self.key+'.jpg')
-
+        if iz==0:
+            self.z = config.max_z
+        else:
+            self.z = iz
+        self.key = tileXYZToQuadKey(self.x, self.y, self.z)
+        self.url = config.basic_url % self.key
+        self.file = config.image_floder % (self.key+'.jpg')
+    
     def run(self):
         threading.Thread.run(self)
         try:
@@ -57,37 +62,55 @@ class BingImageDownloader(threading.Thread):
 #         self.stop()
     
     def download(self):
-        try:
-            img = requests.get(self.url)
-            if img.content != none_img and not exists(self.file):
-                _f = open(self.file, 'wb')
-                _f.write(img.content)
-                _f.close()
-        except Exception as e:
-            raise BingException(e)
-    
+        if not exists(self.file):
+            try:
+                img = requests.get(self.url)
+                if img.content != none_img:
+                    _f = open(self.file, 'wb')
+                    _f.write(img.content)
+                    _f.close()
+                else:
+                    self.retry_z()
+            except Exception as e:
+                raise BingException(e)
+        else:
+            return
+
     def retry(self):
-        h = BingImageDownloader(self.x, self.y)
+        h = BingImageDownloader(self.x, self.y, self.config, self.z)
         h.start()
-        
-#     def stop(self):
-#         threading.Thread.stop(self)
+    
+    def retry_z(self):
+        if self.z > self.config.min_z:
+            x = int(self.x/2)
+            y = int(self.y/2)
+            h = BingImageDownloader(x, y, self.config, self.z-1)
+            h.start()
+        else:
+            return
         
 class KeyGenerator(threading.Thread):
-    def __init__(self, queue):
+    def __init__(self, configpath):
         threading.Thread.__init__(self)
-        self.data = queue
-        self.x = 0
-        self.y = 0
-        self.count = 0
+        self.config = Config(configpath)
+        self.data = Queue()
+        self.x = self.config.x
+        self.y = self.config.y
+        self.Max_z = self.config.max_z
+        self.Min_z = self.config.min_z
+        self.MAX_axes = 2**self.Max_z
+        self.debug = self.config.debug
+        self.debugTryTimes = self.config.debugTryTimes
+        if self.config.debug:
+            self.count = 0
         self.stop_produce = False
         self.stop_consume = False
-
+    
     def run(self):
         while True:
             dl = self.data.qsize()
-            if dl <= MAX_QUEUE/2 and not self.stop_produce:
-                for _ in range(MAX_QUEUE/10):
+            if dl <= self.config.MAX_QUEUE/2 and not self.stop_produce:
+                for _ in range(self.config.MAX_QUEUE/10):
                     if not self.getNextXY():
                         self.stop_produce = True
                         break
@@ -96,11 +119,11 @@ class KeyGenerator(threading.Thread):
             
             tl = len(threading.enumerate())
 #             print tl
-            if tl < MAX_Threads and not self.stop_consume:
-                for _ in range(MAX_Threads-tl):
+            if tl < self.config.MAX_Threads+1 and not self.stop_consume:
+                for _ in range(self.config.MAX_Threads-tl):
                     if not self.data.empty():
                         (_x, _y) = self.data.get()
-                        handler = BingImageDownloader(_x, _y)
+                        handler = BingImageDownloader(_x, _y, self.config)
                         handler.start()
                     else:
                         self.stop_consume = True
@@ -110,13 +133,15 @@ class KeyGenerator(threading.Thread):
                 break
                     
     def getNextXY(self):
-        if self.count >= 5000:
-            self.x = None
-            self.y = None
-            return False
-        self.count = self.count + 1
-        if self.y < MAX_axes:
-            if self.x < MAX_axes:
+        if self.debug:
+            if self.count >= self.debugTryTimes:
+                self.x = None
+                self.y = None
+                return False
+            self.count = self.count + 1
+        
+        if self.y < self.MAX_axes:
+            if self.x < self.MAX_axes:
                 self.x = self.x + 1
             else:
                 self.x = 0
@@ -128,10 +153,8 @@ class KeyGenerator(threading.Thread):
             return False
             
 if __name__ == '__main__':
-    q = Queue()
-    r = KeyGenerator(q)
-    r.start()               
-                
-
+    
+    r = KeyGenerator('china.cfg')
+    r.start()
             
                     
