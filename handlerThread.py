@@ -15,12 +15,14 @@ job for each tile image download stuff.
 from Queue import Queue
 import threading
 from os.path import exists
+import os
 
 import requests
 from Config import Config
 
 from transform import tileXYZToQuadKey
-
+import math
+import random
 
 # z = 13
 # MAX_axes = 2**z-1
@@ -49,7 +51,11 @@ class BingImageDownloader(threading.Thread):
             self.z = iz
         self.key = tileXYZToQuadKey(self.x, self.y, self.z)
         self.url = config.basic_url % self.key
-        self.file = config.image_floder % (self.key+'.jpg')
+        self.floder = str(len(self.key)) + '/'
+        self.floderpath = config.image_floder % self.floder
+        self.file = config.image_floder % (self.floder + self.key+'.jpg')
+        if random.random()<0.1:
+            print self.file
     
     def run(self):
         threading.Thread.run(self)
@@ -66,6 +72,8 @@ class BingImageDownloader(threading.Thread):
             try:
                 img = requests.get(self.url)
                 if img.content != none_img:
+                    if not exists(self.floderpath):
+                        os.makedirs(self.floderpath)
                     _f = open(self.file, 'wb')
                     _f.write(img.content)
                     _f.close()
