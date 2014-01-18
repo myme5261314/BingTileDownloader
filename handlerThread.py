@@ -160,7 +160,7 @@ class KeyGenerator(threading.Thread):
             return False
             
 if __name__ == '__main__':
-    r = KeyGenerator('china.cfg')             
+    r = KeyGenerator('wuhan.cfg')             
     r.start()
             
                     
