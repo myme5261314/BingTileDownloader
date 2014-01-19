@@ -13,22 +13,20 @@ job for each tile image download stuff.
 
 # producer_consumer_queue
 from Queue import Queue
-import threading
-from os.path import exists
 import os
+from os.path import exists
+import threading
 
 import requests
+import time
 from Config import Config
-
 from transform import tileXYZToQuadKey
+
 
 # z = 13
 # MAX_axes = 2**z-1
-
-
 # basic_url = 'http://h0.ortho.tiles.virtualearth.net/tiles/a%s.jpeg?g=131'
 # basic_url = 'http://ecn.t0.tiles.virtualearth.net/tiles/a%s.jpeg?g=2241'
-
 none_img = open('None.png','rb').read()
 # floder = 'D://bing/%s'
 
@@ -58,9 +56,10 @@ class BingImageDownloader(threading.Thread):
         threading.Thread.run(self)
         try:
             self.download()
-#             print 'Finish: %d %d' % (self.x, self.y) 
+#             print 'Finish: %d %d' % (self.x, self.y, self.z) 
         except BingException as e:
-            print e
+#             print e
+            print '%s: Retry %d, %d, %d' % (time.ctime(), self.x, self.y, self.z)
             self.retry()
 #         self.stop()
     
@@ -108,10 +107,10 @@ class KeyGenerator(threading.Thread):
         self.Min_z = self.config.min_z
         self.debug = self.config.debug
         self.debugTryTimes = self.config.debugTryTimes
-        if self.config.debug:
-            self.count = 0
+        self.count = 0
         self.stop_produce = False
         self.stop_consume = False
+        self.total = self.config.getTotalTileNum()
     
     def run(self):
         while True:
@@ -123,6 +122,7 @@ class KeyGenerator(threading.Thread):
                         break
                     else:
                         self.data.put((self.x, self.y))
+            time.sleep(3)
             
             tl = len(threading.enumerate())
 #             print tl
@@ -145,8 +145,10 @@ class KeyGenerator(threading.Thread):
                 self.x = None
                 self.y = None
                 return False
-            self.count = self.count + 1
-        
+        self.count = self.count + 1
+        if self.count % 1000 == 0 and self.x != None and self.y != None:
+            print '%s: Proceed:%f/100' % (time.ctime(), float(self.count)/self.total * 100)
+            self.config.updateState(self.x, self.y)
         if self.y < self.max_y:
             if self.x < self.max_x:
                 self.x = self.x + 1
@@ -160,7 +162,7 @@ class KeyGenerator(threading.Thread):
             return False
             
 if __name__ == '__main__':
-    r = KeyGenerator('wuhan.cfg')             
+    r = KeyGenerator('wuhan.cfg')
     r.start()
             
                     

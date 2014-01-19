@@ -15,6 +15,7 @@ class Config(object):
     def __init__(self, filepath):
         config = RawConfigParser()
         config.read(filepath)
+        self.fp = filepath
         self.name = config.get('Task', 'name')
         self.description = config.get('Task', 'description')
         self.basic_url = config.get('Task', 'Basic_url')
@@ -52,6 +53,16 @@ class Config(object):
         print self.x, self.max_x
         print self.y, self.max_y
         print (self.max_x-self.x)*(self.max_y-self.y)
+    
+    def getTotalTileNum(self):
+        return (self.max_x-self.x)*(self.max_y-self.y)
+    def updateState(self, x, y):
+        config = RawConfigParser()
+        config.read(self.fp)
+        config.set('Task-State', 'currentX', str(x))
+        config.set('Task-State', 'currentY', str(y))
+        with open(self.fp, 'wb') as configfile:
+            config.write(configfile)
 
 
 if __name__ == '__main__':
