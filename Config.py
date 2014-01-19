@@ -55,7 +55,10 @@ class Config(object):
         print (self.max_x-self.x)*(self.max_y-self.y)
     
     def getTotalTileNum(self):
-        return (self.max_x-self.x)*(self.max_y-self.y)
+        if self.x == self.min_x and self.y == self.min_y:
+            return (self.max_x-self.x)*(self.max_y-self.y)
+        else:
+            return (self.max_x-self.min_x)*(self.self.max_y-self.y) + (self.max_x - self.x) + 3*self.MAX_QUEUE
     def updateState(self, x, y):
         config = RawConfigParser()
         config.read(self.fp)

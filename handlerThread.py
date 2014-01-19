@@ -14,6 +14,7 @@ job for each tile image download stuff.
 # producer_consumer_queue
 from Queue import Queue
 import os
+import sys
 from os.path import exists
 import threading
 
@@ -21,6 +22,7 @@ import requests
 import time
 from Config import Config
 from transform import tileXYZToQuadKey
+from docutils.nodes import math
 
 
 # z = 13
@@ -29,6 +31,8 @@ from transform import tileXYZToQuadKey
 # basic_url = 'http://ecn.t0.tiles.virtualearth.net/tiles/a%s.jpeg?g=2241'
 none_img = open('None.png','rb').read()
 # floder = 'D://bing/%s'
+
+lock = threading.Lock()
 
 class BingException(Exception):
     def __init__(self, value):
@@ -66,15 +70,70 @@ class BingImageDownloader(threading.Thread):
     def download(self):
         if not exists(self.file):
             try:
+                if self.z < self.config.max_z:
+                    _record = self.config.record[self.z-self.config.min_z]
+                    if _record.has_key((self.x, self.y)):
+                        if _record[(self.x, self.y)] > 0:
+                            lock.acquire()
+                            _record[(self.x, self.y)] = _record[(self.x, self.y)] + 1
+                            lock.release()
+                            return
+                        elif _record[(self.x, self.y)] < 0:
+                            lock.acquire()
+                            _record[(self.x, self.y)] = _record[(self.x, self.y)] - 1
+                            lock.release()
+                            self.retry_z()
+                            return
                 img = requests.get(self.url)
-                if img.content != none_img:
+                if sys.getsizeof(img.content) > 1024 and img.content != none_img:
                     if not exists(self.floderpath):
                         os.makedirs(self.floderpath)
                     _f = open(self.file, 'wb')
                     _f.write(img.content)
                     _f.close()
+                    if self.z < self.config.max_z:
+                        _record = self.config.record[self.z-self.config.min_z]
+                        if not _record.has_key((self.x, self.y)):
+                            lock.acquire()
+                            _record[(self.x, self.y)] = 1
+                            lock.release()
+                        elif _record[(self.x, self.y)] > 0:
+                            lock.acquire()
+                            _record[(self.x, self.y)] = 1 + _record[(self.x, self.y)]
+                            lock.release()
+                        elif _record[(self.x, self.y)] < 0:
+                            lock.acquire()
+                            _record[(self.x, self.y)] = 1 - _record[(self.x, self.y)]
+                            lock.release()
                 else:
-                    self.retry_z()
+                    if self.z < self.config.max_z:
+                        _record = self.config.record[self.z-self.config.min_z]
+                        if not _record.has_key((self.x, self.y)):
+                            lock.acquire()
+                            _record[(self.x, self.y)] = -1
+                            lock.release()
+                        elif _record[(self.x, self.y)] < 0:
+                            lock.acquire()
+                            _record[(self.x, self.y)] = _record[(self.x, self.y)] - 1
+                            lock.release()
+                            
+                    _record = self.config.record[self.z-1-self.config.min_z]
+                    _x = int(self.x/2)
+                    _y = int(self.y/2)
+                    # have no record
+                    if not _record.has_key((_x, _y)):
+                        self.retry_z()
+                    # have record show it not exists
+                    elif _record[(_x, _y)] < 0:
+                        lock.acquire()
+                        _record[(_x, _y)] = _record[(_x, _y)] - 1
+                        lock.release()
+                        self.retry_z()
+                    # have record show it exists
+                    elif _record[(_x, _y)] > 0:
+                        lock.acquire()
+                        _record[(_x, _y)] = _record[(_x, _y)] + 1
+                        lock.release()
             except Exception as e:
                 raise BingException(e)
         else:
@@ -105,6 +164,9 @@ class KeyGenerator(threading.Thread):
         self.max_y = self.config.max_y
         self.Max_z = self.config.max_z
         self.Min_z = self.config.min_z
+        self.config.record = list()
+        for _ in range(self.Max_z-self.Min_z):
+            self.config.record.append(dict())
         self.debug = self.config.debug
         self.debugTryTimes = self.config.debugTryTimes
         self.count = 0
