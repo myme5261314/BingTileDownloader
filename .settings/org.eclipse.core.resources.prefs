@@ -4,6 +4,7 @@ encoding/BroadFirstConfig.py=utf-8
 encoding/BroadFirstDownloader.py=utf-8
 encoding/Config.py=utf-8
 encoding/ExamineSupplier.py=utf-8
+encoding/FileMover.py=utf-8
 encoding/downloader.py=utf-8
 encoding/handlerThread.py=utf-8
 encoding/rect.py=utf-8

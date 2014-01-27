@@ -77,7 +77,7 @@ class BroadFirstConfig(object):
         config.read(self.fp)
         process = config.getfloat('Task-State', 'Process')
         total = self.getTotalTileNum()
-        process = process + 1/float(total)
+        process = process + 1/float(total)*100
         config.set('Task-State', 'Process', str(process))
         with open(self.fp, 'wb') as configfile:
             config.write(configfile)
