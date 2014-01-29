@@ -63,7 +63,8 @@ class BroadFirstConfig(object):
 
         print self.x, self.max_x
         print self.y, self.max_y
-        print (self.max_x-self.x)*(self.max_y-self.y)
+        cur = (self.y-self.min_y)*(self.max_x-self.min_x)+(self.x-self.min_x)
+        print self.getTotalTileNum() - cur
     
     def getTotalTileNum(self):
         return (self.max_x-self.min_x)*(self.max_y-self.min_y)
