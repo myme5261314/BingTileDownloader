@@ -29,6 +29,8 @@ def downloadTile(key, url_t, path_t):
             img = requests.get(url)
             success = True
         except requests.exceptions.RequestException as e:
+            continue
+        except Exception as e:
             print e
     if len(img.content) > 1033:
         if not os.path.exists(os.path.dirname(path)):
@@ -36,6 +38,7 @@ def downloadTile(key, url_t, path_t):
         _f = open(path, 'wb')
         _f.write(img.content)
         _f.close()
+        print 'Finish %s success!' % path
         return True
     else:
         return False

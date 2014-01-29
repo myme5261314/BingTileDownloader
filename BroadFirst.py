@@ -66,7 +66,7 @@ class BroadFirstGenerator(Process):
             if self.x < self.config.max_x:
                 self.x = self.x + 1
             else:
-                self.x = self.min_x
+                self.x = self.config.min_x
                 self.y = self.y + 1
             return True
         else:
