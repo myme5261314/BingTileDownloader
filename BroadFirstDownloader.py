@@ -38,9 +38,10 @@ class BroadFirstDownloader(multiprocessing.Process):
             (x, y, z) = job
 #             logger.debug("Start %d, %d, %d" % (x, y, z))
             quadkey = tileXYZToQuadKey(x, y, z)
-            if self.broadFirst(quadkey):
+            if self.config.isFinish(x, y, z) or self.broadFirst(quadkey):
                 lock.acquire()
                 process = self.config.updateProcess()
+                self.config.recordFinish(x, y, z)
                 lock.release()
                 logger.debug('%s: %f/100' % (time.ctime(), process))
 #             if not self.broadFirst(quadkey):

@@ -38,6 +38,14 @@ class BroadFirstConfig(object):
         self.x = config.getint('Task-State', 'currentX')
         self.y = config.getint('Task-State', 'currentY')
         self.progress = config.getfloat('Task-State', 'Process')
+        self.finishlist = config.get('Task-State', 'FinishList')
+        l = self.finishlist.split('|')
+        self.finishlist = []
+        for i in l:
+            if i == '':
+                continue
+            x, y, z = i.split(',')
+            self.finishlist.append((x,y,z))
         if self.progress != 0:
             t = self.progress * self.getTotalTileNum() / 100
             plus_x = int(t % (self.max_x - self.min_x))
@@ -101,6 +109,16 @@ class BroadFirstConfig(object):
         with open(self.fp, 'wb') as configfile:
             config.write(configfile)
         return process
+    def recordFinish(self, x, y, z):
+        self.finishlist.append((x,y,z))
+        config = RawConfigParser()
+        config.read(self.fp)
+        l = config.get('Task-State', 'FinishList')
+        config.set('Task-State', 'FinishList', l + ('%d,%d,%d|' % (x,y,z)))
+        with open(self.fp, 'wb') as configfile:
+            config.write(configfile)
+    def isFinish(self, x, y, z):
+        return (x, y, z) in self.finishlist
 
 
 if __name__ == '__main__':
