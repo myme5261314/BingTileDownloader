@@ -37,21 +37,29 @@ class BroadFirstConfig(object):
         self.max_y = int(latToTileY(self.area[2], self.min_z))
         self.x = config.getint('Task-State', 'currentX')
         self.y = config.getint('Task-State', 'currentY')
+        self.progress = config.getfloat('Task-State', 'Process')
+        if self.progress != 0:
+            t = self.progress * self.getTotalTileNum() / 100
+            plus_x = int(t % (self.max_x - self.min_x))
+            plus_y = int(t/(self.max_x - self.min_x))
+            self.x = self.min_x + plus_x - 1
+            self.y = self.min_y + plus_y
         # Initialize
         if self.x == 0 and self.y == 0:
             self.x = self.min_x
             self.y = self.min_y
         # Breakpoint Resume
-        elif self.x-self.min_x+(self.y-self.min_y)*(self.max_x-self.min_x)>3*self.MAX_QUEUE:
-            if self.x - self.min_x > 3*self.MAX_QUEUE:
-                self.x = self.x - 3*self.MAX_QUEUE
+        elif self.x-self.min_x+(self.y-self.min_y)*(self.max_x-self.min_x)>2*self.MAX_Threads:
+            if self.x - self.min_x > 2*self.MAX_Threads:
+                self.x = self.x - 2*self.MAX_Threads
             else:
-                self.x = self.max_x - (3*self.MAX_QUEUE - (self.x - self.min_x))
+                self.x = self.max_x - (2*self.MAX_Threads - (self.x - self.min_x))
                 self.y = self.y - 1
         else:
             self.x = self.min_x
             self.y = self.min_y
         
+        self.resumeProcess()
 
         print self.x, self.max_x
         print self.y, self.max_y
@@ -78,6 +86,16 @@ class BroadFirstConfig(object):
         process = config.getfloat('Task-State', 'Process')
         total = self.getTotalTileNum()
         process = process + 1/float(total)
+        config.set('Task-State', 'Process', str(process))
+        with open(self.fp, 'wb') as configfile:
+            config.write(configfile)
+        return process
+    def resumeProcess(self):
+        config = RawConfigParser()
+        config.read(self.fp)
+        cur = (self.y-self.min_y)*(self.max_x-self.min_x)+(self.x-self.min_x)
+        total = self.getTotalTileNum()
+        process = float(cur)/total * 100
         config.set('Task-State', 'Process', str(process))
         with open(self.fp, 'wb') as configfile:
             config.write(configfile)
