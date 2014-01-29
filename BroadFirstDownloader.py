@@ -14,6 +14,8 @@ from downloader import downloadTile
 from BroadFirstConfig import BroadFirstConfig
 import time
 
+lock = multiprocessing.Lock()
+
 class BroadFirstDownloader(multiprocessing.Process):
     def __init__(self, q, config):
         multiprocessing.Process.__init__(self)
@@ -37,7 +39,9 @@ class BroadFirstDownloader(multiprocessing.Process):
 #             logger.debug("Start %d, %d, %d" % (x, y, z))
             quadkey = tileXYZToQuadKey(x, y, z)
             if self.broadFirst(quadkey):
+                lock.acquire()
                 process = self.config.updateProcess()
+                lock.release()
                 logger.debug('%s: %f/100' % (time.ctime(), process))
 #             if not self.broadFirst(quadkey):
 #                 logger.debug("not Finished. %d, %d, %d" % (x, y, z))
