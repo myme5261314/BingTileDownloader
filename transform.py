@@ -10,18 +10,18 @@ This file defines some transform function that will be invoked in this project.
 import math
 
 def latToTileY(lat, zoom):
-    l = lat / 180 * math.pi;
-    pf = math.log(math.tan(l) + (1 / math.cos(l)));
-    return math.pow(2.0, zoom - 1) * (math.pi - pf) / math.pi;
+    l = lat / 180 * math.pi
+    pf = math.log(math.tan(l) + (1 / math.cos(l)))
+    return math.pow(2.0, zoom - 1) * (math.pi - pf) / math.pi
 
 def lonToTileX(lon, zoom):
-    return math.pow(2.0, zoom - 3) * (lon + 180.0) / 45.0;
+    return math.pow(2.0, zoom - 3) * (lon + 180.0) / 45.0
 
 def tileYToLat(y, zoom):
-    return math.atan(math.sinh(math.pi - (math.pi * y / math.pow(2.0, zoom - 1)))) * 180 / math.pi;
+    return math.atan(math.sinh(math.pi - (math.pi * y / math.pow(2.0, zoom - 1)))) * 180 / math.pi
 
 def tileXToLon(x, zoom):
-    return x * 45.0 / math.pow(2.0, zoom - 3) - 180.0;
+    return x * 45.0 / math.pow(2.0, zoom - 3) - 180.0
 
 
 def tileXYZToQuadKey(x, y, z):
@@ -47,3 +47,34 @@ def tileXYZToQuadKey(x, y, z):
             digit += 2
         quadKey += str(digit)
     return quadKey
+
+# <summary>
+# Converts a QuadKey into tile XY coordinates.
+# </summary>
+# <param name="quadKey">QuadKey of the tile.</param>
+# <param name="tileX">Output parameter receiving the tile X coordinate.</param>
+# <param name="tileY">Output parameter receiving the tile Y coordinate.</param>
+# <param name="levelOfDetail">Output parameter receiving the level of detail.</param>
+def QuadKeyToTileXY(quadKey, z):
+    tileX = tileY = 0
+    levelOfDetail = len(quadKey)
+    for i in range(z):
+        mask = 1 << (z - i - 1)
+        temp = quadKey[i]
+        if temp == '0':
+            continue
+
+        if temp == '1':
+            tileX |= mask
+            continue
+
+        if temp == '2':
+            tileY |= mask
+            continue
+
+        if temp == '3':
+            tileX |= mask
+            tileY |= mask
+            continue
+        raise Exception("Invalid QuadKey digit sequence.")
+    return tileX,tileY
