@@ -53,8 +53,8 @@ class BroadFirstConfig(object):
             if self.x - self.min_x > 2*self.MAX_Threads:
                 self.x = self.x - 2*self.MAX_Threads
             else:
-                self.x = self.max_x - (2*self.MAX_Threads % (self.x - self.min_x))
-                self.y = self.y - int((2*self.MAX_Threads % (self.x - self.min_x)))
+                self.x = self.max_x - int(2*self.MAX_Threads % (self.x - self.min_x))
+                self.y = self.y - int((2*self.MAX_Threads / (self.x - self.min_x)))
         else:
             self.x = self.min_x
             self.y = self.min_y
