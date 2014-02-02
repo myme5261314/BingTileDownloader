@@ -28,7 +28,7 @@ class BroadFirstDownloader(multiprocessing.Process):
         while not Finish:
             try:
                 if self.tasks.empty():
-                    time.sleep(5)
+                    time.sleep(30)
                     if self.tasks.empty():
                         Finish = True
                         break

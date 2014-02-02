@@ -110,13 +110,14 @@ class BroadFirstConfig(object):
             config.write(configfile)
         return process
     def recordFinish(self, x, y, z):
-        self.finishlist.append((x,y,z))
-        config = RawConfigParser()
-        config.read(self.fp)
-        l = config.get('Task-State', 'FinishList')
-        config.set('Task-State', 'FinishList', l + ('%d,%d,%d|' % (x,y,z)))
-        with open(self.fp, 'wb') as configfile:
-            config.write(configfile)
+        if (x, y, z) not in self.finishlist:
+            self.finishlist.append((x,y,z))
+            config = RawConfigParser()
+            config.read(self.fp)
+            l = config.get('Task-State', 'FinishList')
+            config.set('Task-State', 'FinishList', l + ('%d,%d,%d|' % (x,y,z)))
+            with open(self.fp, 'wb') as configfile:
+                config.write(configfile)
     def isFinish(self, x, y, z):
         return (x, y, z) in self.finishlist
 

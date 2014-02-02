@@ -46,11 +46,17 @@ class BroadFirstGenerator(Process):
                 for consumer in consumers:
                     consumer.start()
             if self.data.empty():
-                break
-            time.sleep(60)
+                if self.getNextXY():
+                    self.data.put((self.x, self.y, self.config.min_z))
+                else:
+                    self.stop_produce = True
+                    break
+            # time.sleep(60)
                         
     def getNextXY(self):
 #         logger = multiprocessing.get_logger()
+        if self.x == None and self.y == None:
+            return False
         if self.config.debug:
             if self.count >= self.config.debugTryTimes:
                 self.x = None
