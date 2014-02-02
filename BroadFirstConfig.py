@@ -44,7 +44,7 @@ class BroadFirstConfig(object):
         for i in l:
             if i == '':
                 continue
-            x, y, z = i.split(',')
+            x, y, z = map(int,i.split(','))
             self.finishlist.append((x,y,z))
         if self.progress != 0:
             t = self.progress * self.getTotalTileNum() / 100
