@@ -28,8 +28,10 @@ class BroadFirstDownloader(multiprocessing.Process):
         while not Finish:
             try:
                 if self.tasks.empty():
-                    Finish = True
-                    break
+                    time.sleep(5)
+                    if self.tasks.empty():
+                        Finish = True
+                        break
                 job = self.tasks.get()
             except Queue.Empty as e:
 #                 logger.error(e)
